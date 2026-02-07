@@ -4,9 +4,9 @@ from nss_handler import HandleRequests, status
 
 
 # Add your imports below this line
-from views import list_docks, retrieve_dock, delete_dock, update_dock
-from views import list_haulers, retrieve_hauler, delete_hauler, update_hauler
-from views import list_ships, retrieve_ship, delete_ship, update_ship
+from views import list_docks, retrieve_dock, delete_dock, update_dock, create_dock
+from views import list_haulers, retrieve_hauler, delete_hauler, update_hauler, create_hauler
+from views import list_ships, retrieve_ship, delete_ship, update_ship, create_ship
 
 
 class JSONServer(HandleRequests):
@@ -21,27 +21,24 @@ class JSONServer(HandleRequests):
         if url["requested_resource"] == "docks":
             if url["pk"] != 0:
                 response_body = retrieve_dock(url["pk"])
-                return self.response(response_body, status.HTTP_200_SUCCESS.value)
-
-            response_body = list_docks()
-            return self.response(response_body, status.HTTP_200_SUCCESS.value)
+            else:
+                response_body = list_docks()
 
         elif url["requested_resource"] == "haulers":
             if url["pk"] != 0:
                 response_body = retrieve_hauler(url["pk"])
-                return self.response(response_body, status.HTTP_200_SUCCESS.value)
-
-            response_body = list_haulers()
-            return self.response(response_body, status.HTTP_200_SUCCESS.value)
+            else:
+                response_body = list_haulers()
 
         elif url["requested_resource"] == "ships":
             if url["pk"] != 0:
-                response_body = retrieve_ship(url["pk"])
-                return self.response(response_body, status.HTTP_200_SUCCESS.value)
-
-            response_body = list_ships()
+                response_body = retrieve_ship(url["pk"], url)
+            else:
+                response_body = list_ships(url)
+        
+        # Centralized response return (cleaner logic)
+        if response_body:
             return self.response(response_body, status.HTTP_200_SUCCESS.value)
-
         else:
             return self.response("", status.HTTP_404_CLIENT_ERROR_RESOURCE_NOT_FOUND.value)
 
@@ -113,9 +110,29 @@ class JSONServer(HandleRequests):
     def do_POST(self):
         """Handle POST requests from a client"""
 
-        pass
+        response_body = ""
+        url = self.parse_url(self.path)
 
+        # Get the request body JSON for the new data
+        content_len = int(self.headers.get('content-length', 0))
+        request_body = self.rfile.read(content_len)
+        request_body = json.loads(request_body)
 
+        if url["requested_resource"] == "docks":
+            # The view now returns the full JSON string
+            response_body = create_dock(request_body)
+            return self.response(response_body, status.HTTP_201_SUCCESS_CREATED.value)
+
+        elif url["requested_resource"] == "haulers":
+            response_body = create_hauler(request_body)
+            return self.response(response_body, status.HTTP_201_SUCCESS_CREATED.value)
+
+        elif url["requested_resource"] == "ships":
+            response_body = create_ship(request_body)
+            return self.response(response_body, status.HTTP_201_SUCCESS_CREATED.value)
+
+        else:
+            return self.response("", status.HTTP_404_CLIENT_ERROR_RESOURCE_NOT_FOUND.value)
 
 
 

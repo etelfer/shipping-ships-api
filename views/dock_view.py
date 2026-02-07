@@ -80,3 +80,22 @@ def retrieve_dock(pk):
         serialized_dock = json.dumps(dict(query_results))
 
     return serialized_dock
+
+def create_dock(dock_data):
+    # Open a connection to the database
+    with sqlite3.connect("./shipping.db") as conn:
+        db_cursor = conn.cursor()
+
+        # Write the SQL query to get the information you want
+        db_cursor.execute("""
+        INSERT INTO Dock (location, capacity)
+        VALUES (?, ?)
+        """, (dock_data['location'], dock_data['capacity']))
+
+        # Get the ID of the newly created row
+        new_id = db_cursor.lastrowid
+
+        # Serialize Python dictionary to JSON encoded string
+        serialized_id = json.dumps({"id": new_id})
+
+    return serialized_id
